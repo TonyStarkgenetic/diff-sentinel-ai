@@ -1,0 +1,71 @@
+name: Sentinel PR Review (Dogfood)
+
+on:
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  sentinel-review:
+    name: diff-sentinel Self-Review
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Generate PR Diff
+        run: |
+          git fetch origin ${{ github.base_ref }} --depth=1
+          git diff origin/${{ github.base_ref }}...HEAD > pr.diff
+
+      - name: Run diff-sentinel Audit
+        id: audit
+        run: |
+          node --experimental-strip-types src/cli.ts diff pr.diff --json > audit-result.json
+          echo "result<<EOF" >> $GITHUB_OUTPUT
+          node --experimental-strip-types src/cli.ts diff pr.diff >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Post PR Comment
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const output = `${{ steps.audit.outputs.result }}`;
+            const body = `### 🛡️ diff-sentinel Automated PR Audit\n\n\`\`\`\n${output}\n\`\`\`\n\n*This review was generated automatically by [diff-sentinel](https://github.com/${{ github.repository }})*`;
+            
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c => c.body.includes('diff-sentinel Automated PR Audit'));
+            
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }

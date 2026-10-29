@@ -1,0 +1,58 @@
+{
+  "name": "diff-sentinel",
+  "version": "1.2.0",
+  "description": "Autonomous Open-Source Maintainer Sentinel: Fast AST & Git Diff Analyzer, Security & Breaking Change Detector, GitHub Action, and Model Context Protocol (MCP) Server for AI-assisted Code Reviews",
+  "keywords": [
+    "git",
+    "diff",
+    "ast",
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "claude-code",
+    "codex",
+    "openai",
+    "code-review",
+    "pull-request",
+    "security-scanner",
+    "triage",
+    "maintainer-tools",
+    "github-action",
+    "supply-chain-security",
+    "complexity-analysis"
+  ],
+  "author": "Open Source Maintainers",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/types.ts",
+  "bin": {
+    "diff-sentinel": "./bin/diff-sentinel.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "action.yml",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "start": "node --experimental-strip-types src/cli.ts",
+    "mcp": "node --experimental-strip-types src/cli.ts mcp",
+    "audit": "node --experimental-strip-types src/cli.ts audit .",
+    "format-pr": "node --experimental-strip-types src/cli.ts format"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/diff-sentinel.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/diff-sentinel/issues"
+  },
+  "homepage": "https://github.com/your-username/diff-sentinel#readme",
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

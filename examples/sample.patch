@@ -1,0 +1,12 @@
+diff --git a/src/auth.ts b/src/auth.ts
+index 1111111..2222222 100644
+--- a/src/auth.ts
++++ b/src/auth.ts
+@@ -1,5 +1,6 @@
+-export function loginUser(email: string) {
+-  return { email };
++export function loginUser(email: string, secretToken: string) {
++  // Potential issue: hardcoded fallback
++  const defaultSecret = "sk-1234567890abcdef1234567890abcdef";
++  return { email, token: secretToken || defaultSecret };
+ }

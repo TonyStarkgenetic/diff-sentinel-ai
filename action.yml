@@ -1,0 +1,39 @@
+name: 'diff-sentinel'
+description: 'Autonomous Maintainer Sentinel: AST Diff Analysis, Security Secret Scanner & PR Risk Assessment'
+author: 'diff-sentinel maintainers'
+inputs:
+  github-token:
+    description: 'GitHub Token for posting PR review comments'
+    required: false
+    default: ${{ github.token }}
+  strict:
+    description: 'Fail the action (exit code 1) if high risk or critical security finding detected'
+    required: false
+    default: 'false'
+  base-ref:
+    description: 'Base branch or commit reference to compare against'
+    required: false
+    default: ${{ github.base_ref || 'main' }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    - name: Generate Diff
+      shell: bash
+      run: |
+        git fetch origin ${{ inputs.base-ref }} --depth=1
+        git diff origin/${{ inputs.base-ref }}...HEAD > pr.diff
+
+    - name: Run diff-sentinel Audit
+      shell: bash
+      run: |
+        STRICT_FLAG=""
+        if [ "${{ inputs.strict }}" = "true" ]; then
+          STRICT_FLAG="--strict"
+        fi
+        node --experimental-strip-types ${{ github.action_path }}/src/cli.ts diff pr.diff $STRICT_FLAG
