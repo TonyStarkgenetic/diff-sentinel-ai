@@ -19,7 +19,7 @@ test('pr-formatter: should format clean PR as safe comment', () => {
   assert.strictEqual(comment.includes('Risk Score'), true);
 });
 
-test('pr-formatter: should format security findings and breaking changes with emojis', () => {
+test('pr-formatter: should format security findings and breaking changes clearly', () => {
   const riskyDiff = `diff --git a/src/auth.ts b/src/auth.ts
 --- a/src/auth.ts
 +++ b/src/auth.ts
@@ -33,5 +33,5 @@ test('pr-formatter: should format security findings and breaking changes with em
 
   assert.strictEqual(comment.includes('Security Findings'), true);
   assert.strictEqual(comment.includes('Breaking Changes'), true);
-  assert.strictEqual(comment.includes('🔴'), true);
+  assert.strictEqual(comment.includes('[CRITICAL]'), true);
 });

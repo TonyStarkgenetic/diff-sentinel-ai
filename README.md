@@ -8,7 +8,7 @@
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg?style=flat-square)](LICENSE)
 [![MCP Protocol](https://img.shields.io/badge/MCP-2024--11--05-purple?style=flat-square)](https://modelcontextprotocol.io)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D22.0.0-green.svg?style=flat-square&logo=node.js)](package.json)
-[![Tests](https://img.shields.io/badge/tests-30%20passed-brightgreen?style=flat-square)](tests)
+[![Tests](https://img.shields.io/badge/tests-33%20passed-brightgreen?style=flat-square)](tests)
 
 </div>
 
@@ -29,13 +29,13 @@ Reviewing pull requests at scale is challenging:
 ## Key Features
 
 - **Unified Diff Parser**: Parses hunks, additions, deletions, and file renames with blast-radius calculation.
-- **AST Breaking Change Detection**: Identifies removed exports and modified parameter signatures across TypeScript, JavaScript, Python, and Go.
+- **AST Breaking Change Detection**: Identifies removed exports and modified parameter signatures across TypeScript, JavaScript, Python, Go, and Rust, while distinguishing optional/default parameters.
 - **Secret & Vulnerability Scanner**: 22 built-in rules detecting OpenAI, Anthropic, AWS, GCP, GitHub, Discord, database URLs, JWTs, and unsafe dynamic execution (`eval`, shell injection, SQL concat).
 - **SARIF 2.1.0 Export**: Full compatibility with GitHub Advanced Security and Code Scanning tabs.
 - **LLM Context Optimizer**: Compresses diffs by filtering lockfile/asset noise, reducing prompt tokens by 60–80%.
 - **Model Context Protocol (MCP)**: Native JSON-RPC 2.0 stdio server providing 10 tools for Claude Desktop, Claude Code, and Cursor.
 - **Cognitive Complexity Analyzer**: Detects deeply nested conditional logic and flags maintainability hotspots.
-- **Supply-Chain Dependency Guard**: Analyzes manifest diffs (`package.json`) for package downgrades and typosquatting risks.
+- **Supply-Chain Dependency Guard**: Analyzes manifest diffs (`package.json`, `requirements.txt`, `Cargo.toml`) for package downgrades, loosened pins, and typosquatting risks.
 - **Automated Issue Triage**: Classifies issues by category, urgency, reproduction completeness, and labels.
 - **Zero Runtime Dependencies**: Runs natively using Node.js 22+ type-stripping and built-in test runner.
 
@@ -152,7 +152,7 @@ Add the following to your `claude_desktop_config.json`:
       "command": "node",
       "args": [
         "--experimental-strip-types",
-        "C:\\Users\\Gleb\\.gemini\\antigravity\\scratch\\diff-sentinel\\src\\cli.ts",
+        "/absolute/path/to/diff-sentinel-ai/src/cli.ts",
         "mcp"
       ]
     }
@@ -165,7 +165,7 @@ Add the following to your `claude_desktop_config.json`:
 In your project repository, run:
 
 ```bash
-claude mcp add diff-sentinel -- node --experimental-strip-types /path/to/diff-sentinel/src/cli.ts mcp
+claude mcp add diff-sentinel -- node --experimental-strip-types /absolute/path/to/diff-sentinel-ai/src/cli.ts mcp
 ```
 
 ### Available MCP Tools
@@ -245,11 +245,11 @@ jobs:
     "**/node_modules/**",
     "**/dist/**",
     "**/*.min.js",
-    "**/fixtures/**"
+    "**/coverage/**"
   ],
   "strictMode": false,
   "riskThreshold": 50,
-  "maxAllowedComplexity": 30,
+  "maxAllowedComplexity": 35,
   "disableRuleIds": []
 }
 ```
@@ -264,7 +264,7 @@ The test suite runs with Node's built-in test runner without third-party framewo
 npm test
 ```
 
-Current test coverage: **30 tests across 11 test suites (100% pass rate)**.
+Current test coverage: **33 tests across 11 test suites (100% pass rate)**.
 
 ---
 

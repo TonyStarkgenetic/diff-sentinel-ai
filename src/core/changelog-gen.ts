@@ -79,31 +79,31 @@ export function generateChangelog(
   lines.push('');
 
   if (breakingChanges.length > 0) {
-    lines.push('### ⚠️ BREAKING CHANGES');
+    lines.push('### BREAKING CHANGES');
     breakingChanges.forEach(b => lines.push(`- ${b}`));
     lines.push('');
   }
 
   if (features.length > 0) {
-    lines.push('### 🚀 Features');
+    lines.push('### Features');
     features.forEach(f => lines.push(`- ${f}`));
     lines.push('');
   }
 
   if (fixes.length > 0) {
-    lines.push('### 🐛 Bug Fixes');
+    lines.push('### Bug Fixes');
     fixes.forEach(f => lines.push(`- ${f}`));
     lines.push('');
   }
 
   if (performance.length > 0) {
-    lines.push('### ⚡ Performance Improvements');
+    lines.push('### Performance Improvements');
     performance.forEach(p => lines.push(`- ${p}`));
     lines.push('');
   }
 
   if (refactors.length > 0) {
-    lines.push('### 🛠️ Refactoring');
+    lines.push('### Refactoring');
     refactors.forEach(r => lines.push(`- ${r}`));
     lines.push('');
   }

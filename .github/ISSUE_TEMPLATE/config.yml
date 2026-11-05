@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
-  - name: 💬 Discussions
-    url: https://github.com/your-username/diff-sentinel/discussions
+  - name: Discussions
+    url: https://github.com/TonyStarkgenetic/diff-sentinel-ai/discussions
     about: Ask questions, share ideas, and discuss diff-sentinel with the community.
-  - name: 📖 Documentation
-    url: https://github.com/your-username/diff-sentinel#readme
+  - name: Documentation
+    url: https://github.com/TonyStarkgenetic/diff-sentinel-ai#readme
     about: Read the full documentation and integration guides.

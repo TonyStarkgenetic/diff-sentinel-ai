@@ -4,12 +4,12 @@
 
 ## Type of Change
 
-- [ ] 🐛 Bug fix (non-breaking change that fixes an issue)
-- [ ] 🚀 New feature (non-breaking change that adds functionality)
-- [ ] ⚠️ Breaking change (fix or feature that would cause existing functionality to change)
-- [ ] 📚 Documentation update
-- [ ] 🛠️ Refactoring (no functional changes)
-- [ ] 🧪 Test update
+- [ ] Bug fix (non-breaking change that fixes an issue)
+- [ ] New feature (non-breaking change that adds functionality)
+- [ ] Breaking change (fix or feature that would cause existing functionality to change)
+- [ ] Documentation update
+- [ ] Refactoring (no functional changes)
+- [ ] Test update
 
 ## Checklist
 
@@ -17,7 +17,7 @@
 - [ ] I have added tests that prove my fix/feature works
 - [ ] All new and existing unit tests pass (`npm test`)
 - [ ] I have updated the documentation (if applicable)
-- [ ] I have run `diff-sentinel audit .` and the health score is still 100/100
+- [ ] I have run `npm run audit` and the repository health score is 100/100
 - [ ] My changes generate no new security warnings from `diff-sentinel scan`
 
 ## Security Considerations

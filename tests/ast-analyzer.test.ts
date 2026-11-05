@@ -39,3 +39,41 @@ test('ast-analyzer: should flag added mandatory parameters as signature modifica
   assert.strictEqual(breaking[0].symbolName, 'fetchData');
   assert.strictEqual(breaking[0].changeType, 'signature_modified');
 });
+
+test('ast-analyzer: should not flag added optional or default parameters as breaking', () => {
+  const diff = `diff --git a/src/service.ts b/src/service.ts
+--- a/src/service.ts
++++ b/src/service.ts
+@@ -1,3 +1,3 @@
+-export function connect(host: string) {}
++export function connect(host: string, timeout: number = 5000, retries?: number) {}
+`;
+
+  const parsed = parseUnifiedDiff(diff);
+  const breaking = detectBreakingChanges(parsed);
+
+  assert.strictEqual(breaking.length, 0);
+});
+
+test('ast-analyzer: should detect breaking changes in Go and Rust files', () => {
+  const multiLangDiff = `diff --git a/pkg/server.go b/pkg/server.go
+--- a/pkg/server.go
++++ b/pkg/server.go
+@@ -10,3 +10,3 @@
+-func StartServer(addr string) error {
++func StartServer(addr string, tlsConfig *TLSConfig) error {
+diff --git a/src/lib.rs b/src/lib.rs
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -5,3 +5,2 @@
+-pub fn parse_token(&self, input: &str) -> Result<Token, Error> {
+-}
+`;
+
+  const parsed = parseUnifiedDiff(multiLangDiff);
+  const breaking = detectBreakingChanges(parsed);
+
+  assert.strictEqual(breaking.length, 2);
+  assert.strictEqual(breaking.some(b => b.symbolName === 'StartServer' && b.changeType === 'signature_modified'), true);
+  assert.strictEqual(breaking.some(b => b.symbolName === 'parse_token' && b.changeType === 'removed'), true);
+});

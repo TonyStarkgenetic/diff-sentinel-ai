@@ -1,0 +1,12 @@
+{
+  "ignorePatterns": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/*.min.js",
+    "**/coverage/**"
+  ],
+  "strictMode": false,
+  "riskThreshold": 50,
+  "maxAllowedComplexity": 35,
+  "disableRuleIds": []
+}

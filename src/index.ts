@@ -16,7 +16,7 @@ import { formatPRComment } from './core/pr-formatter.ts';
 import { generateSarifReport } from './core/sarif-formatter.ts';
 import { estimateTokens, packDiffForLlm } from './core/diff-compressor.ts';
 import { DEFAULT_CONFIG, loadSentinelConfig } from './core/config-loader.ts';
-import type { DiffAnalysisResult } from './types.ts';
+import type { DiffAnalysisResult, SentinelConfig } from './types.ts';
 
 export type * from './types.ts';
 export {
@@ -41,11 +41,28 @@ export {
 /**
  * Perform complete end-to-end audit on a git unified diff
  */
-export function analyzeDiff(rawDiff: string): DiffAnalysisResult {
+export function analyzeDiff(
+  rawDiff: string,
+  customConfig?: Partial<SentinelConfig>
+): DiffAnalysisResult {
+  const config: SentinelConfig = {
+    ...loadSentinelConfig(),
+    ...customConfig
+  };
+
   const parsed = parseUnifiedDiff(rawDiff);
-  const securityFindings = scanDiffForSecurity(parsed);
+  const allSecurityFindings = scanDiffForSecurity(parsed);
+  const securityFindings =
+    config.disableRuleIds.length > 0
+      ? allSecurityFindings.filter(f => !config.disableRuleIds.includes(f.ruleId))
+      : allSecurityFindings;
+
   const breakingChanges = detectBreakingChanges(parsed);
   const riskAssessment = assessDiffRisk(parsed, securityFindings, breakingChanges);
+
+  if (riskAssessment.score >= config.riskThreshold) {
+    riskAssessment.isSafeToMerge = false;
+  }
 
   const hasTestChanges = parsed.files.some(f =>
     /\.(test|spec)\.[a-z]+$/i.test(f.newPath) || f.newPath.includes('tests/')

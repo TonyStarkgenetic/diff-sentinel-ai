@@ -1,5 +1,6 @@
 /**
  * diff-sentinel: Dependency Change & Supply-Chain Risk Analyzer
+ * Supports package.json (Node.js), requirements.txt (Python), and Cargo.toml (Rust)
  */
 
 import type { ParsedDiff } from '../types.ts';
@@ -25,7 +26,7 @@ export interface DependencyAnalysis {
 
 const SUSPICIOUS_PACKAGE_NAMES = [
   /^[a-z]$/i, // single letter packages
-  /^(?:lodash|express|axios|chalk|debug|react|vue|next)[-_][a-z0-9]+$/i, // typosquatting patterns
+  /^(?:lodash|express|axios|chalk|debug|react|vue|next|requests|urllib3|tokio|serde)[-_][a-z0-9]+$/i, // typosquatting patterns
   /[-_](?:security|fix|patch|update)$/i // deceptive suffixes
 ];
 
@@ -40,10 +41,13 @@ export function analyzeDependencies(parsedDiff: ParsedDiff): DependencyAnalysis 
   );
 
   for (const file of manifestFiles) {
-    const isPackageJson = /package\.json$/i.test(file.newPath || file.oldPath);
-
-    if (isPackageJson) {
+    const filePath = file.newPath || file.oldPath;
+    if (/package\.json$/i.test(filePath)) {
       parsePackageJsonDiff(file.hunks, changes, warnings);
+    } else if (/requirements.*\.txt$/i.test(filePath)) {
+      parseRequirementsTxtDiff(file.hunks, changes, warnings, /dev/i.test(filePath));
+    } else if (/Cargo\.toml$/i.test(filePath)) {
+      parseCargoTomlDiff(file.hunks, changes, warnings);
     }
   }
 
@@ -117,11 +121,103 @@ function parsePackageJsonDiff(
     }
   }
 
-  // Correlate additions and removals
+  correlateChanges(addedMap, removedMap, changes, warnings);
+}
+
+function parseRequirementsTxtDiff(
+  hunks: { lines: string[] }[],
+  changes: DependencyChange[],
+  warnings: string[],
+  isDevFile: boolean
+): void {
+  const addedMap = new Map<string, { version: string; isDev: boolean }>();
+  const removedMap = new Map<string, { version: string; isDev: boolean }>();
+
+  for (const hunk of hunks) {
+    for (const line of hunk.lines) {
+      if (!line.startsWith('+') && !line.startsWith('-')) continue;
+      if (line.startsWith('+++') || line.startsWith('---')) continue;
+
+      const sign = line[0];
+      const content = line.substring(1).split('#')[0].trim();
+      if (!content || content.startsWith('-')) continue;
+
+      const match = content.match(/^([a-zA-Z0-9_.\-]+)\s*(?:([=<>~]+)\s*([a-zA-Z0-9_.\-*]+))?/);
+      if (!match) continue;
+
+      const pkgName = match[1].toLowerCase();
+      const operator = match[2] || '';
+      const ver = match[3] || '*';
+      const versionStr = operator === '==' ? ver : `${operator}${ver}`;
+
+      if (sign === '+') {
+        addedMap.set(pkgName, { version: versionStr, isDev: isDevFile });
+      } else if (sign === '-') {
+        removedMap.set(pkgName, { version: versionStr, isDev: isDevFile });
+      }
+    }
+  }
+
+  correlateChanges(addedMap, removedMap, changes, warnings);
+}
+
+function parseCargoTomlDiff(
+  hunks: { lines: string[] }[],
+  changes: DependencyChange[],
+  warnings: string[]
+): void {
+  const addedMap = new Map<string, { version: string; isDev: boolean }>();
+  const removedMap = new Map<string, { version: string; isDev: boolean }>();
+
+  let isDevSection = false;
+
+  for (const hunk of hunks) {
+    for (const line of hunk.lines) {
+      const cleanLine = line.replace(/^[+-]\s*/, '').trim();
+      if (/^\[.*dev-dependencies.*\]/i.test(cleanLine)) {
+        isDevSection = true;
+        continue;
+      } else if (/^\[.*dependencies.*\]/i.test(cleanLine)) {
+        isDevSection = false;
+        continue;
+      }
+
+      if (!line.startsWith('+') && !line.startsWith('-')) continue;
+      if (line.startsWith('+++') || line.startsWith('---')) continue;
+
+      const sign = line[0];
+      const body = line.substring(1).trim();
+
+      // Match simple: serde = "1.0.190" or inline table: serde = { version = "1.0.190", ... }
+      const simpleMatch = body.match(/^([a-zA-Z0-9_-]+)\s*=\s*"([^"]+)"/);
+      const tableMatch = body.match(/^([a-zA-Z0-9_-]+)\s*=\s*\{[^}]*version\s*=\s*"([^"]+)"/);
+
+      const match = simpleMatch || tableMatch;
+      if (!match) continue;
+
+      const pkgName = match[1];
+      const version = match[2];
+
+      if (sign === '+') {
+        addedMap.set(pkgName, { version, isDev: isDevSection });
+      } else if (sign === '-') {
+        removedMap.set(pkgName, { version, isDev: isDevSection });
+      }
+    }
+  }
+
+  correlateChanges(addedMap, removedMap, changes, warnings);
+}
+
+function correlateChanges(
+  addedMap: Map<string, { version: string; isDev: boolean }>,
+  removedMap: Map<string, { version: string; isDev: boolean }>,
+  changes: DependencyChange[],
+  warnings: string[]
+): void {
   for (const [pkgName, addInfo] of addedMap.entries()) {
     const riskFlags: string[] = [];
 
-    // Check suspicious package name
     if (SUSPICIOUS_PACKAGE_NAMES.some(rx => rx.test(pkgName))) {
       riskFlags.push('Suspicious or potentially typosquatted package name');
       warnings.push(`Potential typosquatting detected for package: '${pkgName}'`);
@@ -135,9 +231,8 @@ function parsePackageJsonDiff(
         riskFlags.push('Dependency downgraded to older version');
       }
 
-      // Check if version was pinned and now loosened
-      if (/^[0-9]/.test(remInfo.version) && /^[~^]/.test(addInfo.version)) {
-        riskFlags.push('Version constraint loosened from pinned to loose (^/~)');
+      if (/^[0-9]/.test(remInfo.version) && /^[~^>=*]/.test(addInfo.version)) {
+        riskFlags.push('Version constraint loosened from pinned to range');
       }
 
       changes.push({

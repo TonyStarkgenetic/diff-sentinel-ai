@@ -1,13 +1,13 @@
 # Contributing to diff-sentinel
 
-Thank you for your interest in contributing to **diff-sentinel**! We welcome bug reports, feature requests, pull requests, and feedback from the community.
+Thank you for your interest in contributing to **diff-sentinel**. We welcome bug reports, feature requests, pull requests, and feedback from the community.
 
 ## Development Setup
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/your-username/diff-sentinel.git
-   cd diff-sentinel
+   git clone https://github.com/TonyStarkgenetic/diff-sentinel-ai.git
+   cd diff-sentinel-ai
    ```
 
 2. **Requirements:**
