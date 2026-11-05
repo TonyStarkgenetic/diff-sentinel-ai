@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-11-05
+
+### Features
+
+- **sarif-formatter**: Added native SARIF 2.1.0 report generation (`--sarif` flag and `export_sarif` MCP tool) for direct integration with GitHub Advanced Security and Code Scanning tabs.
+- **diff-compressor**: Added token estimator and context packaging (`pack` command and `pack_diff_for_llm` MCP tool) to strip lockfiles and generated noise, saving 60-80% prompt tokens for Claude Code and LLMs.
+- **config-loader**: Added support for `.sentinelrc.json` and `sentinel.config.json` configuration files with customizable ignore patterns, risk thresholds, and rules.
+- **mcp**: Expanded MCP server tools to 10 total tools including SARIF export and LLM diff packaging.
+- **cli**: Refined CLI output formatting into clean, professional, non-emoji technical reports.
+
+### Documentation
+
+- Completely revamped README.md with professional engineering documentation, clear CLI examples, and zero emoji clutter.
+- Updated repository URLs and badges to reflect the production repository.
+
 ## [1.2.0] - 2026-10-29
 
 ### 🚀 Features

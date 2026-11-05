@@ -13,6 +13,9 @@ import { auditRepository } from './core/repo-auditor.ts';
 import { analyzeComplexity } from './core/complexity-analyzer.ts';
 import { analyzeDependencies } from './core/dep-analyzer.ts';
 import { formatPRComment } from './core/pr-formatter.ts';
+import { generateSarifReport } from './core/sarif-formatter.ts';
+import { estimateTokens, packDiffForLlm } from './core/diff-compressor.ts';
+import { DEFAULT_CONFIG, loadSentinelConfig } from './core/config-loader.ts';
 import type { DiffAnalysisResult } from './types.ts';
 
 export type * from './types.ts';
@@ -27,7 +30,12 @@ export {
   auditRepository,
   analyzeComplexity,
   analyzeDependencies,
-  formatPRComment
+  formatPRComment,
+  generateSarifReport,
+  packDiffForLlm,
+  estimateTokens,
+  loadSentinelConfig,
+  DEFAULT_CONFIG
 };
 
 /**

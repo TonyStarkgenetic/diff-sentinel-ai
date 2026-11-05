@@ -164,3 +164,67 @@ export interface DependencyAnalysis {
   warnings: string[];
 }
 
+export interface SarifRule {
+  id: string;
+  name: string;
+  shortDescription: { text: string };
+  helpUri?: string;
+  defaultConfiguration?: { level: 'error' | 'warning' | 'note' };
+}
+
+export interface SarifResult {
+  ruleId: string;
+  level: 'error' | 'warning' | 'note';
+  message: { text: string };
+  locations: Array<{
+    physicalLocation: {
+      artifactLocation: { uri: string };
+      region: { startLine: number };
+    };
+  }>;
+}
+
+export interface SarifLog {
+  $schema: string;
+  version: string;
+  runs: Array<{
+    tool: {
+      driver: {
+        name: string;
+        version: string;
+        informationUri: string;
+        rules: SarifRule[];
+      };
+    };
+    results: SarifResult[];
+  }>;
+}
+
+export interface PackedFile {
+  path: string;
+  status: 'added' | 'deleted' | 'modified' | 'renamed' | 'omitted';
+  reason?: string;
+  tokenEstimate: number;
+  content: string;
+}
+
+export interface PackedDiffResult {
+  totalFiles: number;
+  omittedFiles: number;
+  rawChars: number;
+  packedChars: number;
+  rawEstimatedTokens: number;
+  packedEstimatedTokens: number;
+  tokenSavingsPercent: number;
+  formattedOutput: string;
+}
+
+export interface SentinelConfig {
+  ignorePatterns?: string[];
+  strictMode?: boolean;
+  riskThreshold?: number;
+  maxAllowedComplexity?: number;
+  disableRuleIds?: string[];
+}
+
+

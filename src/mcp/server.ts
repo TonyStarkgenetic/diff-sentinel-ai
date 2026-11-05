@@ -7,12 +7,15 @@ import readline from 'node:readline';
 import { MCP_TOOLS } from './tools.ts';
 import { analyzeDiff, formatPRComment } from '../index.ts';
 import { scanDiffForSecurity } from '../core/security-scanner.ts';
+import { detectBreakingChanges } from '../core/ast-analyzer.ts';
 import { parseUnifiedDiff } from '../core/diff-parser.ts';
 import { triageIssue } from '../core/issue-triager.ts';
 import { generateChangelog } from '../core/changelog-gen.ts';
 import { auditRepository } from '../core/repo-auditor.ts';
 import { analyzeComplexity } from '../core/complexity-analyzer.ts';
 import { analyzeDependencies } from '../core/dep-analyzer.ts';
+import { generateSarifReport } from '../core/sarif-formatter.ts';
+import { packDiffForLlm } from '../core/diff-compressor.ts';
 
 interface JsonRpcRequest {
   jsonrpc: '2.0';
@@ -175,6 +178,25 @@ export class MCPServer {
           const diff = String(args.diff || '');
           const analysis = analyzeDiff(diff);
           outputText = formatPRComment(analysis);
+          break;
+        }
+
+        case 'export_sarif': {
+          const diff = String(args.diff || '');
+          const parsed = parseUnifiedDiff(diff);
+          const findings = scanDiffForSecurity(parsed);
+          const breaking = detectBreakingChanges(parsed);
+          const sarif = generateSarifReport(findings, breaking);
+          outputText = JSON.stringify(sarif, null, 2);
+          break;
+        }
+
+        case 'pack_diff_for_llm': {
+          const diff = String(args.diff || '');
+          const parsed = parseUnifiedDiff(diff);
+          const maxLines = typeof args.maxLinesPerFile === 'number' ? args.maxLinesPerFile : 250;
+          const packed = packDiffForLlm(parsed, { maxLinesPerFile: maxLines });
+          outputText = JSON.stringify(packed, null, 2);
           break;
         }
 

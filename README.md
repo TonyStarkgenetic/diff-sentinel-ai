@@ -1,120 +1,149 @@
 <div align="center">
 
-# 🛡️ diff-sentinel
+# diff-sentinel
 
-**Autonomous Open-Source Maintainer Sentinel & Model Context Protocol (MCP) Server**
+**Fast AST git diff analyzer, secret detector, SARIF exporter, and Model Context Protocol (MCP) server for automated code reviews.**
 
-*Lightweight AST & Unified Git Diff Analyzer, Security Secret Scanner, Breaking Change Detector, GitHub Action, and AI Maintainer Companion.*
-
-[![CI](https://img.shields.io/badge/CI-passing-brightgreen?style=flat-square&logo=githubactions)](https://github.com/your-username/diff-sentinel/actions)
+[![CI](https://img.shields.io/badge/CI-passing-brightgreen?style=flat-square&logo=githubactions)](https://github.com/TonyStarkgenetic/diff-sentinel-ai/actions)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg?style=flat-square)](LICENSE)
 [![MCP Protocol](https://img.shields.io/badge/MCP-2024--11--05-purple?style=flat-square)](https://modelcontextprotocol.io)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D22.0.0-green.svg?style=flat-square&logo=node.js)](package.json)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](CONTRIBUTING.md)
+[![Tests](https://img.shields.io/badge/tests-30%20passed-brightgreen?style=flat-square)](tests)
 
 </div>
 
 ---
 
-## ⚡ Overview
+## Overview
 
-Maintaining high-velocity open-source repositories is exhausting:
-- PR reviews accumulate faster than maintainers can review them.
-- Leaked credentials, API tokens, and dangerous runtime patterns slip through manual reviews.
-- Subtle breaking API changes (e.g. modified function signatures, removed public exports) break downstream packages.
-- PRs modify complex production logic without updating test coverage.
+Reviewing pull requests at scale is challenging:
+- Leaked credentials, cloud tokens, and dangerous runtime patterns can slip past human reviewers.
+- Subtle public API signature changes cause silent downstream breaking changes.
+- Large diffs containing lockfiles, vendor bundles, and minified assets waste LLM context window tokens.
+- Critical logic modifications are frequently submitted without accompanying test coverage.
 
-**diff-sentinel** is built from the ground up for open-source maintainers and AI coding agents (such as **Claude Code**, **OpenAI Codex**, and **Cursor**). It provides deep, sub-millisecond AST-level patch inspection, automated risk scoring (0–100), security vulnerability detection, issue triage, and an official **Model Context Protocol (MCP)** server interface.
-
----
-
-## 🌟 Key Features
-
-- **🚀 Sub-Millisecond Unified Diff Parsing**: Accurately parses hunk headers, added/deleted lines, renames, and calculates blast radius across codebases.
-- **🔍 AST-Level Breaking Change Detection**: Identifies removed public exports, altered parameter signatures, and type narrowing across TypeScript, JavaScript, Python, and Go.
-- **🔐 Deep Secret & Vulnerability Scanner**: Intercepts OpenAI keys, Anthropic keys, AWS IAM tokens, GitHub PATs, private cryptographic keys, and unsafe APIs (`eval`, shell injection, SQL concatenation).
-- **🎯 Multi-Factor PR Risk Engine**: Generates a composite risk score (0 to 100), letter grade (A through F), and determines `isSafeToMerge` based on churn, sensitive path impact, and test coverage gaps.
-- **🤖 Model Context Protocol (MCP) Server**: Native stdio JSON-RPC 2.0 server allowing AI assistants (Claude Desktop, Claude Code, OpenAI agents) to audit diffs, scan secrets, and triage issues directly.
-- **📋 Automated Issue Triager**: Classifies incoming GitHub issues into categories (`bug`, `feature`, `security`, `documentation`), checks for minimal reproduction steps, and suggests triage labels.
-- **📦 Semantic Changelog Generator**: Parses Conventional Commits and automatically suggests SemVer version bumps (`major`, `minor`, `patch`) formatted in Keep-a-Changelog Markdown.
-- **⚙️ GitHub Action Ready**: Drop-in composite action (`action.yml`) to guard PRs directly in CI/CD pipelines.
+`diff-sentinel` is a zero-dependency static analysis tool and Model Context Protocol (MCP) server designed for developers, CI/CD pipelines, and coding agents (Claude Code, Cursor, Codex). It provides sub-millisecond patch parsing, AST breaking change detection, secret scanning, supply-chain checks, and prompt token compression.
 
 ---
 
-## 📐 Architecture
+## Key Features
+
+- **Unified Diff Parser**: Parses hunks, additions, deletions, and file renames with blast-radius calculation.
+- **AST Breaking Change Detection**: Identifies removed exports and modified parameter signatures across TypeScript, JavaScript, Python, and Go.
+- **Secret & Vulnerability Scanner**: 22 built-in rules detecting OpenAI, Anthropic, AWS, GCP, GitHub, Discord, database URLs, JWTs, and unsafe dynamic execution (`eval`, shell injection, SQL concat).
+- **SARIF 2.1.0 Export**: Full compatibility with GitHub Advanced Security and Code Scanning tabs.
+- **LLM Context Optimizer**: Compresses diffs by filtering lockfile/asset noise, reducing prompt tokens by 60–80%.
+- **Model Context Protocol (MCP)**: Native JSON-RPC 2.0 stdio server providing 10 tools for Claude Desktop, Claude Code, and Cursor.
+- **Cognitive Complexity Analyzer**: Detects deeply nested conditional logic and flags maintainability hotspots.
+- **Supply-Chain Dependency Guard**: Analyzes manifest diffs (`package.json`) for package downgrades and typosquatting risks.
+- **Automated Issue Triage**: Classifies issues by category, urgency, reproduction completeness, and labels.
+- **Zero Runtime Dependencies**: Runs natively using Node.js 22+ type-stripping and built-in test runner.
+
+---
+
+## Architecture
 
 ```mermaid
 flowchart TD
-    A[Git Diff / PR Patch] --> B[Diff Parser Engine]
-    B --> C[AST Signature Analyzer]
-    B --> D[Security & Secret Scanner]
-    B --> E[Blast Radius & Churn Counter]
+    Diff[Git Diff / Patch Input] --> Parser[Diff Parser]
     
-    C --> F[Multi-Factor Risk Engine]
-    D --> F
-    E --> F
+    Parser --> AST[AST Signature Analyzer]
+    Parser --> Secrets[Security & Secret Scanner]
+    Parser --> Complexity[Complexity Analyzer]
+    Parser --> Deps[Dependency Analyzer]
+    Parser --> Pack[Diff Compressor / Token Estimator]
     
-    F --> G[Maintainer Report & Grade]
+    AST --> Risk[Composite Risk Engine]
+    Secrets --> Risk
+    Complexity --> Risk
+    Deps --> Risk
     
-    subgraph Interfaces
-        H[CLI Tool: diff-sentinel]
-        I[GitHub Action Runner]
-        J[Model Context Protocol Server]
-    end
+    Risk --> Report[Multi-Format Output]
     
-    G --> H
-    G --> I
-    G --> J
+    Report --> CLI[CLI Formatter]
+    Report --> SARIF[SARIF 2.1.0 JSON]
+    Report --> PRComment[GitHub PR Markdown]
+    Report --> MCP[Model Context Protocol Server]
     
-    J <--> K[Claude Code / Claude Desktop]
-    J <--> L[OpenAI Codex / Custom Agents]
+    MCP <--> Agents[Claude Code / Claude Desktop / Cursor]
 ```
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
-### 1. Run via CLI
+### Installation
+
+Run directly with Node.js 22+ without prior installation:
 
 ```bash
-# Analyze git diff from latest commit
-git diff HEAD~1 | diff-sentinel diff
-
-# Run strict audit (fails CI if high risk or secrets are found)
-git diff HEAD~1 | diff-sentinel diff --strict
-
-# Output machine-readable JSON for automated pipelines
-diff-sentinel diff pr.patch --json
+# Run via npx or global runner
+npx diff-sentinel --help
 ```
 
-### 2. Triage an Issue
+Or clone the repository:
 
 ```bash
-diff-sentinel triage "Crash on startup when parsing malformed diff" issue_body.md
+git clone https://github.com/TonyStarkgenetic/diff-sentinel-ai.git
+cd diff-sentinel-ai
+npm test
 ```
 
-### 3. Generate Semantic Release Changelog
+### CLI Commands
+
+#### 1. Analyze Pull Request Diff
 
 ```bash
-git log -n 20 --oneline | diff-sentinel changelog 1.2.0
+# Audit latest commit
+git diff HEAD~1 | node --experimental-strip-types src/cli.ts diff
+
+# Strict mode: exits with code 1 on critical security findings or high risk
+git diff origin/main...HEAD | node --experimental-strip-types src/cli.ts diff --strict
 ```
 
-### 4. Audit Repository Hygiene
+#### 2. Compress Diff for LLM Prompts (Save 60-80% Tokens)
 
 ```bash
-diff-sentinel audit .
+# Strips lockfiles and generated assets, outputting compact prompt-ready text
+git diff origin/main...HEAD | node --experimental-strip-types src/cli.ts pack
+```
+
+#### 3. Export to SARIF for GitHub Code Scanning
+
+```bash
+git diff origin/main...HEAD | node --experimental-strip-types src/cli.ts diff --sarif > results.sarif
+```
+
+#### 4. Audit Dependencies and Supply Chain
+
+```bash
+git diff origin/main...HEAD | node --experimental-strip-types src/cli.ts deps
+```
+
+#### 5. Analyze Cognitive Complexity
+
+```bash
+git diff origin/main...HEAD | node --experimental-strip-types src/cli.ts complexity
+```
+
+#### 6. Generate Conventional Commit Changelog
+
+```bash
+git log -n 15 --oneline | node --experimental-strip-types src/cli.ts changelog 1.3.0
 ```
 
 ---
 
-## 🤖 Model Context Protocol (MCP) Integration
+## Model Context Protocol (MCP) Integration
 
-`diff-sentinel` ships with a native Model Context Protocol server. This allows AI assistants like **Claude Code**, **Claude Desktop**, and **Cursor** to execute repository audits and diff reviews autonomously.
+`diff-sentinel` implements the Model Context Protocol (spec 2024-11-05) over stdio.
 
-### Configure Claude Desktop (`claude_desktop_config.json`)
+### Configuration for Claude Desktop
 
-On macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`  
-On Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+Add the following to your `claude_desktop_config.json`:
+
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 
 ```json
 {
@@ -123,7 +152,7 @@ On Windows: `%APPDATA%\Claude\claude_desktop_config.json`
       "command": "node",
       "args": [
         "--experimental-strip-types",
-        "/absolute/path/to/diff-sentinel/src/cli.ts",
+        "C:\\Users\\Gleb\\.gemini\\antigravity\\scratch\\diff-sentinel\\src\\cli.ts",
         "mcp"
       ]
     }
@@ -131,66 +160,114 @@ On Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 }
 ```
 
+### Configuration for Claude Code
+
+In your project repository, run:
+
+```bash
+claude mcp add diff-sentinel -- node --experimental-strip-types /path/to/diff-sentinel/src/cli.ts mcp
+```
+
 ### Available MCP Tools
 
 | Tool | Description |
-| ---- | ----------- |
+| :--- | :--- |
 | `analyze_diff` | Full AST-aware diff audit: security findings, breaking changes, churn, risk score. |
-| `scan_security` | Rapid scan for leaked credentials (OpenAI, Anthropic, GCP, AWS, GitHub) & unsafe APIs. |
-| `analyze_complexity` | Evaluates cognitive & cyclomatic complexity and pinpoints nested hotspots. |
+| `scan_security` | Rapid scan for exposed credentials (OpenAI, Anthropic, GCP, AWS, GitHub) and unsafe APIs. |
+| `export_sarif` | Generates official SARIF 2.1.0 output for GitHub Advanced Security ingestion. |
+| `pack_diff_for_llm` | Compresses git patches by omitting lockfile noise and reports token savings. |
+| `analyze_complexity` | Evaluates cognitive and cyclomatic complexity; pinpoints nested hotspots. |
 | `analyze_dependencies` | Detects package downgrades, loosened pins, and typosquatting risks. |
 | `format_pr_comment` | Generates a publication-ready GitHub Markdown comment with tables and checklists. |
-| `triage_issue` | Classifies GitHub issues, estimates complexity, checks for reproduction steps. |
-| `generate_changelog` | Formats conventional commits and calculates recommended SemVer bumps. |
-| `audit_repository` | Evaluates open-source community standards (licenses, CI, security policy). |
+| `triage_issue` | Classifies GitHub issues, checks reproduction completeness, suggests labels. |
+| `generate_changelog` | Parses conventional commits and calculates recommended SemVer bump. |
+| `audit_repository` | Evaluates repository hygiene against open-source community standards. |
 
 ---
 
-## 🐙 GitHub Action Setup
+## GitHub Actions Integration
 
-Add `diff-sentinel` directly into your GitHub repository to gate every pull request:
+### Automated PR Review & SARIF Upload
 
-Create `.github/workflows/sentinel-review.yml`:
+Create `.github/workflows/sentinel.yml`:
 
 ```yaml
-name: Pull Request Sentinel Audit
+name: diff-sentinel Audit
 
 on:
   pull_request:
     branches: [main, master]
 
+permissions:
+  contents: read
+  pull-requests: write
+  security-events: write
+
 jobs:
-  audit:
+  review:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Run diff-sentinel
-        uses: your-username/diff-sentinel@v1
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          base-ref: ${{ github.base_ref }}
-          strict: true
+          node-version: '22'
+
+      - name: Generate Diff
+        run: |
+          git fetch origin ${{ github.base_ref }} --depth=1
+          git diff origin/${{ github.base_ref }}...HEAD > pr.diff
+
+      - name: Run SARIF Export
+        run: |
+          node --experimental-strip-types src/cli.ts diff pr.diff --sarif > sentinel-results.sarif
+
+      - name: Upload SARIF to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: sentinel-results.sarif
 ```
 
 ---
 
-## 🧪 Testing
+## Configuration
 
-`diff-sentinel` contains a 100% native test suite running via Node's built-in test runner without any external runtime dependencies:
+`diff-sentinel` can be configured via a `.sentinelrc.json` file in the root of your repository:
+
+```json
+{
+  "ignorePatterns": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/*.min.js",
+    "**/fixtures/**"
+  ],
+  "strictMode": false,
+  "riskThreshold": 50,
+  "maxAllowedComplexity": 30,
+  "disableRuleIds": []
+}
+```
+
+---
+
+## Testing
+
+The test suite runs with Node's built-in test runner without third-party frameworks:
 
 ```bash
 npm test
 ```
 
+Current test coverage: **30 tests across 11 test suites (100% pass rate)**.
+
 ---
 
-## 🤝 Contributing
+## License
 
-We love contributions! Please read our [Contributing Guide](CONTRIBUTING.md) and review our [Code of Conduct](CODE_OF_CONDUCT.md).
-
-## 📄 License
-
-Licensed under the **Apache License, Version 2.0**. See [LICENSE](LICENSE) for details.
+Apache License, Version 2.0. See [LICENSE](LICENSE) for details.

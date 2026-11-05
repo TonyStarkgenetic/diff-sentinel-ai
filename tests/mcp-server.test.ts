@@ -9,6 +9,11 @@ test('mcp-tools: should list required tools with valid schemas', () => {
   assert.strictEqual(toolNames.includes('triage_issue'), true);
   assert.strictEqual(toolNames.includes('generate_changelog'), true);
   assert.strictEqual(toolNames.includes('audit_repository'), true);
+  assert.strictEqual(toolNames.includes('analyze_complexity'), true);
+  assert.strictEqual(toolNames.includes('analyze_dependencies'), true);
+  assert.strictEqual(toolNames.includes('format_pr_comment'), true);
+  assert.strictEqual(toolNames.includes('export_sarif'), true);
+  assert.strictEqual(toolNames.includes('pack_diff_for_llm'), true);
 
   for (const tool of MCP_TOOLS) {
     assert.strictEqual(typeof tool.name, 'string');

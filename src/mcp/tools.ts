@@ -141,5 +141,39 @@ export const MCP_TOOLS: MCPToolDefinition[] = [
       },
       required: ['diff']
     }
+  },
+  {
+    name: 'export_sarif',
+    description:
+      'Export security findings and breaking changes to official SARIF 2.1.0 JSON format for GitHub Advanced Security Code Scanning.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        diff: {
+          type: 'string',
+          description: 'The raw unified git diff to scan and convert into SARIF.'
+        }
+      },
+      required: ['diff']
+    }
+  },
+  {
+    name: 'pack_diff_for_llm',
+    description:
+      'Compress a unified git diff by stripping noise (lockfiles, minified bundles, asset files) and calculate token savings for LLM prompts.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        diff: {
+          type: 'string',
+          description: 'The raw unified git diff to pack and compress.'
+        },
+        maxLinesPerFile: {
+          type: 'number',
+          description: 'Maximum lines per file hunk before truncation (default 250).'
+        }
+      },
+      required: ['diff']
+    }
   }
 ];

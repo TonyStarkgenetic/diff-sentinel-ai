@@ -1,7 +1,7 @@
 {
   "name": "diff-sentinel",
-  "version": "1.2.0",
-  "description": "Autonomous Open-Source Maintainer Sentinel: Fast AST & Git Diff Analyzer, Security & Breaking Change Detector, GitHub Action, and Model Context Protocol (MCP) Server for AI-assisted Code Reviews",
+  "version": "1.3.0",
+  "description": "High-performance git diff parser, AST breaking change analyzer, secret detector, SARIF exporter, and Model Context Protocol (MCP) server.",
   "keywords": [
     "git",
     "diff",
@@ -15,13 +15,14 @@
     "code-review",
     "pull-request",
     "security-scanner",
+    "sarif",
     "triage",
     "maintainer-tools",
     "github-action",
     "supply-chain-security",
     "complexity-analysis"
   ],
-  "author": "Open Source Maintainers",
+  "author": "TonyStarkgenetic",
   "license": "Apache-2.0",
   "type": "module",
   "main": "./src/index.ts",
@@ -46,12 +47,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/diff-sentinel.git"
+    "url": "https://github.com/TonyStarkgenetic/diff-sentinel-ai.git"
   },
   "bugs": {
-    "url": "https://github.com/your-username/diff-sentinel/issues"
+    "url": "https://github.com/TonyStarkgenetic/diff-sentinel-ai/issues"
   },
-  "homepage": "https://github.com/your-username/diff-sentinel#readme",
+  "homepage": "https://github.com/TonyStarkgenetic/diff-sentinel-ai#readme",
   "engines": {
     "node": ">=22.0.0"
   }
