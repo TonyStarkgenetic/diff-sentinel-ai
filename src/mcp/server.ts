@@ -82,7 +82,7 @@ export class MCPServer {
           },
           serverInfo: {
             name: 'diff-sentinel',
-            version: '1.0.0'
+            version: '1.3.0'
           }
         });
         break;

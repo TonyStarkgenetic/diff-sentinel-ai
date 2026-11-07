@@ -61,7 +61,7 @@ export function auditRepository(repoPath: string): RepoAuditResult {
   if (!hasReadme) missingFiles.push('README.md');
   if (!hasLicense) {
     missingFiles.push('LICENSE');
-    recommendations.push('Add an OSI-approved license (Apache-2.0 or MIT) to qualify for open-source grants.');
+    recommendations.push('Add an OSI-approved license (Apache-2.0 or MIT) to clarify legal usage and redistribution terms.');
   }
   if (!hasContributing) {
     missingFiles.push('CONTRIBUTING.md');

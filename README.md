@@ -8,7 +8,7 @@
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg?style=flat-square)](LICENSE)
 [![MCP Protocol](https://img.shields.io/badge/MCP-2024--11--05-purple?style=flat-square)](https://modelcontextprotocol.io)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D22.0.0-green.svg?style=flat-square&logo=node.js)](package.json)
-[![Tests](https://img.shields.io/badge/tests-33%20passed-brightgreen?style=flat-square)](tests)
+[![Tests](https://img.shields.io/badge/tests-34%20passed-brightgreen?style=flat-square)](tests)
 
 </div>
 
@@ -264,7 +264,7 @@ The test suite runs with Node's built-in test runner without third-party framewo
 npm test
 ```
 
-Current test coverage: **33 tests across 11 test suites (100% pass rate)**.
+Current test coverage: **34 tests across 14 test suites (100% pass rate)**.
 
 ---
 
