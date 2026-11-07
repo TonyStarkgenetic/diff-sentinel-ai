@@ -1,8 +1,8 @@
 ---
 name: diff-sentinel
-description: Audit git diffs, pull requests, and patches for exposed secrets, AST breaking changes (TypeScript, JavaScript, Python, Go, Rust), supply-chain dependency risks, and cognitive complexity. Use whenever reviewing a PR, inspecting staged/unstaged git changes, compressing large diffs for LLM context windows, exporting SARIF 2.1.0 security reports, or gating merges in CI/CD.
+description: Git diff analyzer, secret detector, and PR audit tool. Scans patches for leaked API keys, breaking API signature changes, dependency risks, and cyclomatic complexity. Use when reviewing code, checking uncommitted diffs, packaging patches for LLMs, or running pre-commit checks.
 license: Apache-2.0
-compatibility: Requires Node.js >= 22.0.0 and git. Zero external npm dependencies.
+compatibility: Node.js 22+ and git. Zero external runtime dependencies.
 metadata:
   author: TonyStarkgenetic
   version: "1.3.0"
@@ -10,100 +10,83 @@ metadata:
   mcp-protocol: "2024-11-05"
 ---
 
-# diff-sentinel Agent Skill
+# diff-sentinel
 
-Autonomous git diff analysis, secret scanning, AST breaking-change detection, and context compression for coding agents (Claude Code, Cursor, Codex, Windsurf, OpenHands).
+A lightweight git diff analyzer and Model Context Protocol (MCP) server for inspecting code changes before merging.
 
-## When to Activate This Skill
+## When to Use
 
-Trigger this skill whenever the user or workflow requires:
-1. **Pre-Merge PR / Diff Review**: Checking uncommitted changes (`git diff`), staged changes (`git diff --cached`), or branch comparisons (`git diff origin/main...HEAD`) before committing or opening/merging a pull request.
-2. **Secret & Vulnerability Scanning**: Verifying that no API keys (OpenAI, Anthropic, AWS, GCP, GitHub, Stripe, Slack, Discord), database connection strings, JWTs, or dangerous runtime calls (`eval`, command injection, SQL string concatenation) were introduced.
-3. **Public API Breaking-Change Detection**: Checking whether exported functions, classes, structs, or interfaces in TypeScript, JavaScript, Python, Go, or Rust had required parameters added or symbols removed.
-4. **LLM Prompt Token Compression**: Stripping lockfiles (`package-lock.json`, `pnpm-lock.yaml`, `Cargo.lock`), sourcemaps, and minified bundles from large diffs to save 60–80% of context window tokens.
-5. **Supply-Chain Dependency Auditing**: Inspecting `package.json`, `requirements.txt`, or `Cargo.toml` diffs for version downgrades, loosened pins, or typosquatting patterns.
+Use this skill when:
+- Reviewing pull requests or checking local uncommitted changes (`git diff`).
+- Scanning diffs for exposed credentials (API keys, tokens, database passwords) and dangerous functions (`eval`, shell exec).
+- Checking for breaking changes in exported functions, classes, and interfaces (TypeScript, JavaScript, Python, Go, Rust).
+- Compressing large diffs to avoid wasting LLM context window tokens on lockfiles or generated bundles.
+- Auditing dependency changes in `package.json`, `requirements.txt`, or `Cargo.toml`.
 
 ---
 
-## Standard Operating Procedure (Playbook)
+## Instructions
 
-### Step 1: Acquire the Target Diff
-If the user has not provided a `.patch` or `.diff` string directly, generate it using `git`:
+### 1. Get the Diff
+If a diff is not provided, generate one:
 ```bash
-# For current working tree + staged changes:
+# Unstaged + staged changes:
 git diff HEAD
 
-# For a feature branch compared against main:
+# Branch comparison against main:
 git diff origin/main...HEAD
 ```
 
-### Step 2: Execute Analysis (MCP Preferred, CLI Fallback)
+### 2. Run the Audit
 
-#### Option A: Via Model Context Protocol (MCP Tools)
-If the `diff-sentinel` MCP server is registered in your environment, invoke the appropriate tool directly:
-- **`analyze_diff`**: Pass `{ "diff": "<raw_diff>" }` for a full multi-factor audit (security findings, breaking changes, test coverage alert, and 0–100 risk score).
-- **`pack_diff_for_llm`**: Pass `{ "diff": "<raw_diff>", "maxLinesPerFile": 250 }` before feeding a large diff into your own reasoning context.
-- **`scan_security`**: Pass `{ "diff": "<raw_diff>" }` for rapid 22-rule credential and vulnerability scanning.
-- **`analyze_dependencies`**: Pass `{ "diff": "<raw_diff>" }` when `package.json`, `requirements.txt`, or `Cargo.toml` is modified.
-- **`analyze_complexity`**: Pass `{ "diff": "<raw_diff>" }` to pinpoint deeply nested loops/conditionals and cyclomatic hotspots.
-- **`format_pr_comment`**: Pass `{ "diff": "<raw_diff>" }` to generate a ready-to-post GitHub PR Markdown review comment.
-- **`export_sarif`**: Pass `{ "diff": "<raw_diff>" }` to produce an OASIS SARIF 2.1.0 JSON report for GitHub Code Scanning.
-- **`triage_issue`**: Pass `{ "title": "...", "body": "..." }` to classify GitHub issues by urgency, reproduction steps, and suggested labels.
-- **`generate_changelog`**: Pass `{ "commits": ["feat: ...", "fix: ..."], "version": "1.3.0" }` to compute the SemVer bump and Keep-a-Changelog Markdown.
-- **`audit_repository`**: Pass `{ "repoPath": "." }` to verify repository hygiene (LICENSE, README, SECURITY.md, CI workflows, tests).
+#### Via MCP (if configured):
+- `analyze_diff`: Run a full check on `{ "diff": "<patch>" }` (secrets, breaking changes, test coverage warning, risk score).
+- `scan_security`: Quick secret scan on `{ "diff": "<patch>" }`.
+- `pack_diff_for_llm`: Strip lockfiles/assets from `{ "diff": "<patch>" }` to save context tokens.
+- `analyze_dependencies`: Inspect package manifest changes in `{ "diff": "<patch>" }`.
+- `analyze_complexity`: Calculate cyclomatic complexity and flag deeply nested blocks.
+- `format_pr_comment`: Output a formatted Markdown summary table for PR comments.
+- `export_sarif`: Generate SARIF 2.1.0 for GitHub Code Scanning.
+- `triage_issue`: Classify GitHub issue bug reports by urgency and suggested labels.
+- `generate_changelog`: Parse commit history into Conventional Changelog notes.
+- `audit_repository`: Audit repo hygiene against open-source community standards.
 
-#### Option B: Via Direct CLI Execution
-If running via terminal/shell without MCP attached, execute `diff-sentinel` directly using Node.js 22+:
+#### Via CLI:
 ```bash
-# Full PR audit report
+# Standard review:
 git diff HEAD | npx diff-sentinel diff
 
-# Strict CI gate (exits with code 1 if unsafe to merge or secrets detected)
+# Strict mode (exit code 1 on secrets or high risk):
 git diff origin/main...HEAD | npx diff-sentinel diff --strict
 
-# Structured JSON output for programmatic parsing
-git diff HEAD | npx diff-sentinel diff --json
-
-# Compress diff to save 60-80% tokens
+# Token-optimized patch for LLM prompt:
 git diff HEAD | npx diff-sentinel pack
 
-# Supply-chain dependency audit
+# Check dependencies:
 git diff HEAD | npx diff-sentinel deps
 
-# Cyclomatic & cognitive complexity check
+# Check complexity:
 git diff HEAD | npx diff-sentinel complexity
-
-# Export SARIF 2.1.0 report
-git diff HEAD | npx diff-sentinel diff --sarif > results.sarif
 ```
 
----
-
-## Step 3: Interpret Results & Act
-
-When reporting findings back to the developer, follow these decision rules:
-
-1. **Critical / High Security Findings (`SEC-001` through `SEC-022`)**:
-   - **Action**: Immediately halt the commit or block the PR merge.
-   - **Report**: Cite the exact file path, line number, rule ID, redacted snippet, and remediation steps. Never echo the full unredacted secret in chat.
-2. **Breaking API Changes (`removed` or `signature_modified`)**:
-   - **Action**: Warn the developer that downstream callers may break.
-   - **Report**: Recommend either adding a default value / optional flag to the new parameter or bumping the package version to a `MAJOR` SemVer release.
-3. **Risk Score & Grade (`0–100`, Grade `A` to `F`)**:
-   - **Grade A / B (`score < 50`, no secrets or breaking changes)**: Confirm the patch is `[PASS] Safe to Merge`.
-   - **Grade C / D (`score 50–79`)**: Flag as `[REVIEW] Review Required` and highlight missing test coverage or high-complexity hotspots.
-   - **Grade F (`score >= 80` or critical secrets)**: Mark as `[BLOCKED] Merge Blocked` and list the required checklist items before merging.
+### 3. Review Findings
+- **Secrets (`SEC-*`)**: Warn immediately with the file, line, and remediation. Do not print unmasked secret values in chat.
+- **Breaking changes**: Check if new parameters have default values or are optional. If required parameters were added to exported functions, warn that callers will break.
+- **Status**:
+  - `[PASS]`: Safe to merge (no credentials exposed, low churn, no breaking changes).
+  - `[REVIEW]`: Review required (complexity hotspot, missing tests, or dependency downgrade).
+  - `[BLOCKED]`: Merge blocked (critical secret or unhandled breaking change).
 
 ---
 
-## MCP Server Registration Reference
+## Configuration
 
-To register `diff-sentinel` in **Claude Code**:
+In **Claude Code**:
 ```bash
-claude mcp add diff-sentinel -- node --experimental-strip-types /path/to/diff-sentinel-ai/src/cli.ts mcp
+claude mcp add diff-sentinel -- node --experimental-strip-types /path/to/diff-sentinel/src/cli.ts mcp
 ```
 
-To register in **Claude Desktop** or **Cursor** (`mcp.json` / `claude_desktop_config.json`):
+In `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
@@ -111,7 +94,7 @@ To register in **Claude Desktop** or **Cursor** (`mcp.json` / `claude_desktop_co
       "command": "node",
       "args": [
         "--experimental-strip-types",
-        "/path/to/diff-sentinel-ai/src/cli.ts",
+        "/path/to/diff-sentinel/src/cli.ts",
         "mcp"
       ]
     }
