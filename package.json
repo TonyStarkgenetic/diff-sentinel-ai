@@ -1,6 +1,6 @@
 {
   "name": "diff-sentinel",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "High-performance git diff parser, AST breaking change analyzer, secret detector, SARIF exporter, and Model Context Protocol (MCP) server.",
   "keywords": [
     "git",

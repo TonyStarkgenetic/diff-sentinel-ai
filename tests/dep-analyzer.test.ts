@@ -71,3 +71,43 @@ diff --git a/Cargo.toml b/Cargo.toml
   assert.strictEqual(analysis.changes.some(c => c.name === 'serde' && c.changeType === 'upgraded'), true);
   assert.strictEqual(analysis.changes.some(c => c.name === 'tokio' && c.changeType === 'added'), true);
 });
+
+test('dep-analyzer: should parse pnpm-lock.yaml, poetry.lock, and go.sum diffs', () => {
+  const lockfileDiff = `diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -20,4 +20,5 @@
+ packages:
+-  /axios@1.7.7:
++  /axios@1.6.0:
++    resolution: {tarball: http://registry.npmjs.org/axios/-/axios-1.6.0.tgz}
++  /zod@3.23.8:
+diff --git a/poetry.lock b/poetry.lock
+--- a/poetry.lock
++++ b/poetry.lock
+@@ -10,4 +10,4 @@
+ [[package]]
+ name = "urllib3"
+-version = "2.2.3"
++version = "2.3.0"
+diff --git a/go.sum b/go.sum
+--- a/go.sum
++++ b/go.sum
+@@ -5,2 +5,4 @@
+-github.com/gin-gonic/gin v1.9.0 h1:abc=
+-github.com/gin-gonic/gin v1.9.0/go.mod h1:def=
++github.com/gin-gonic/gin v1.10.0 h1:xyz=
++github.com/gin-gonic/gin v1.10.0/go.mod h1:uvw=
++golang.org/x/crypto v0.28.0 h1:123=
+`;
+
+  const parsed = parseUnifiedDiff(lockfileDiff);
+  const analysis = analyzeDependencies(parsed);
+
+  assert.strictEqual(analysis.changes.some(c => c.name === 'axios' && c.changeType === 'downgraded'), true);
+  assert.strictEqual(analysis.changes.some(c => c.name === 'zod' && c.changeType === 'added'), true);
+  assert.strictEqual(analysis.changes.some(c => c.name === 'urllib3' && c.changeType === 'upgraded'), true);
+  assert.strictEqual(analysis.changes.some(c => c.name === 'github.com/gin-gonic/gin' && c.changeType === 'upgraded'), true);
+  assert.strictEqual(analysis.changes.some(c => c.name === 'golang.org/x/crypto' && c.changeType === 'added'), true);
+  assert.strictEqual(analysis.warnings.some(w => w.includes('Unencrypted HTTP tarball URL')), true);
+});

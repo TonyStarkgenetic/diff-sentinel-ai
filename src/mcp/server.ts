@@ -35,25 +35,53 @@ interface JsonRpcResponse {
   };
 }
 
-export class MCPServer {
-  private rl: readline.Interface;
+export const MAX_JSONRPC_LINE_LENGTH = 10 * 1024 * 1024; // 10 MB
 
-  constructor() {
-    this.rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-      terminal: false
-    });
+export function sanitizeRpcId(id: unknown): string | number | null {
+  if (typeof id === 'string' || (typeof id === 'number' && Number.isFinite(id))) {
+    return id;
+  }
+  return null;
+}
+
+export class MCPServer {
+  private rl?: readline.Interface;
+
+  constructor(bindStdio: boolean = true) {
+    if (bindStdio) {
+      this.rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+        terminal: false
+      });
+    }
   }
 
   public start(): void {
+    if (!this.rl) {
+      this.rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+        terminal: false
+      });
+    }
+
     this.rl.on('line', (line: string) => {
       const trimmed = line.trim();
       if (!trimmed) return;
 
+      if (trimmed.length > MAX_JSONRPC_LINE_LENGTH) {
+        this.sendError(null, -32600, 'Invalid Request: payload exceeds maximum allowed length');
+        return;
+      }
+
       try {
-        const request = JSON.parse(trimmed) as JsonRpcRequest;
-        this.handleRequest(request);
+        const parsed = JSON.parse(trimmed);
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+          this.sendError(null, -32600, 'Invalid Request: expected JSON-RPC object');
+          return;
+        }
+        this.handleRequest(parsed as JsonRpcRequest);
       } catch (err) {
         this.sendError(null, -32700, `Parse error: ${(err as Error).message}`);
       }
@@ -62,46 +90,59 @@ export class MCPServer {
     process.stderr.write('[diff-sentinel-mcp] MCP Server running on stdio.\n');
   }
 
-  private handleRequest(request: JsonRpcRequest): void {
-    const { id, method, params } = request;
+  public handleRequest(request: JsonRpcRequest): void {
+    const rawId = request?.id;
+    const safeId = sanitizeRpcId(rawId);
+
+    if (request.jsonrpc !== '2.0' || typeof request.method !== 'string') {
+      this.sendError(safeId, -32600, 'Invalid Request: jsonrpc must be "2.0" and method must be a string');
+      return;
+    }
+
+    const { method, params } = request;
 
     // Handle notifications (no id)
-    if (id === undefined || id === null) {
+    if (rawId === undefined || rawId === null) {
       if (method === 'notifications/initialized') {
         process.stderr.write('[diff-sentinel-mcp] Client initialized notification received.\n');
       }
       return;
     }
 
+    if (safeId === null) {
+      this.sendError(null, -32600, 'Invalid Request: id must be a string, finite number, or null');
+      return;
+    }
+
     switch (method) {
       case 'initialize': {
-        this.sendResult(id, {
+        this.sendResult(safeId, {
           protocolVersion: '2024-11-05',
           capabilities: {
             tools: {}
           },
           serverInfo: {
             name: 'diff-sentinel',
-            version: '1.3.0'
+            version: '1.4.0'
           }
         });
         break;
       }
 
       case 'tools/list': {
-        this.sendResult(id, {
+        this.sendResult(safeId, {
           tools: MCP_TOOLS
         });
         break;
       }
 
       case 'tools/call': {
-        this.handleToolCall(id, params);
+        this.handleToolCall(safeId, params);
         break;
       }
 
       default: {
-        this.sendError(id, -32601, `Method not found: ${method}`);
+        this.sendError(safeId, -32601, `Method not found: ${method}`);
         break;
       }
     }

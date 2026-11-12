@@ -1,6 +1,6 @@
 /**
  * diff-sentinel: AST & Breaking Change Signature Analyzer
- * Supports TypeScript, JavaScript, Python, Go, and Rust
+ * Supports TypeScript, JavaScript, Python, Go, Rust, Java, C#, and Ruby
  */
 
 import type { BreakingChange, ParsedDiff } from '../types.ts';
@@ -19,7 +19,7 @@ export function detectBreakingChanges(parsedDiff: ParsedDiff): BreakingChange[] 
 
   for (const file of parsedDiff.files) {
     const targetPath = file.newPath || file.oldPath;
-    if (!/\.(ts|tsx|js|jsx|mjs|cjs|py|go|rs)$/i.test(targetPath)) {
+    if (!/\.(ts|tsx|js|jsx|mjs|cjs|py|go|rs|java|cs|rb)$/i.test(targetPath)) {
       continue;
     }
 
@@ -90,7 +90,8 @@ export function detectBreakingChanges(parsedDiff: ParsedDiff): BreakingChange[] 
 
 function countParams(
   rawParams: string,
-  ignoreReceiverNames: string[] = []
+  ignoreReceiverNames: string[] = [],
+  allowKeywordDefaults: boolean = false
 ): { total: number; required: number } {
   const parts = rawParams
     .split(',')
@@ -100,8 +101,13 @@ function countParams(
   let required = 0;
   for (const part of parts) {
     const isOptionalTs = /^[a-zA-Z0-9_$]+\s*\?:/.test(part);
-    const hasDefaultValue = part.includes('=');
-    const isVariadic = part.startsWith('...') || part.startsWith('*');
+    const hasDefaultValue =
+      part.includes('=') || (allowKeywordDefaults && /^[a-zA-Z0-9_]+:\s*\S+/.test(part));
+    const isVariadic =
+      part.startsWith('...') ||
+      part.startsWith('*') ||
+      /\.\.\.\s*[a-zA-Z0-9_$]+$/.test(part) ||
+      /^params\s+/i.test(part);
     if (!isOptionalTs && !hasDefaultValue && !isVariadic) {
       required++;
     }
@@ -229,6 +235,86 @@ function extractExportedSymbol(line: string, filePath: string): ExportedSymbol |
       return {
         name: rsTypeMatch[2],
         kind: rsTypeMatch[1] === 'trait' ? 'interface' : 'class',
+        file: filePath
+      };
+    }
+  }
+
+  // 5. Java public classes, interfaces, enums, records, and methods
+  if (filePath.endsWith('.java')) {
+    const javaTypeMatch = trimmed.match(
+      /^public\s+(?:(?:static|final|abstract|sealed|non-sealed)\s+)*(class|interface|enum|record)\s+([a-zA-Z0-9_$]+)/
+    );
+    if (javaTypeMatch) {
+      return {
+        name: javaTypeMatch[2],
+        kind: javaTypeMatch[1] === 'interface' ? 'interface' : 'class',
+        file: filePath
+      };
+    }
+
+    const javaMethodMatch = trimmed.match(
+      /^public\s+(?:(?:static|final|synchronized|abstract|default|native)\s+)*(?:<[^>]+>\s+)?[\w<>[\],.?]+\s+([a-zA-Z0-9_$]+)\s*\(([^)]*)\)/
+    );
+    if (javaMethodMatch) {
+      const { total, required } = countParams(javaMethodMatch[2]);
+      return {
+        name: javaMethodMatch[1],
+        kind: 'function',
+        file: filePath,
+        paramCount: total,
+        requiredParamCount: required
+      };
+    }
+  }
+
+  // 6. C# public classes, interfaces, structs, records, and methods
+  if (filePath.endsWith('.cs')) {
+    const csTypeMatch = trimmed.match(
+      /^public\s+(?:(?:static|abstract|sealed|partial|readonly)\s+)*(class|interface|struct|record|enum)\s+([a-zA-Z0-9_]+)/
+    );
+    if (csTypeMatch) {
+      return {
+        name: csTypeMatch[2],
+        kind: csTypeMatch[1] === 'interface' ? 'interface' : 'class',
+        file: filePath
+      };
+    }
+
+    const csMethodMatch = trimmed.match(
+      /^public\s+(?:(?:static|async|virtual|override|abstract|sealed|new|extern)\s+)*[\w<>[\],.?]+\s+([a-zA-Z0-9_]+)\s*(?:<[^>]+>)?\s*\(([^)]*)\)/
+    );
+    if (csMethodMatch) {
+      const { total, required } = countParams(csMethodMatch[2]);
+      return {
+        name: csMethodMatch[1],
+        kind: 'function',
+        file: filePath,
+        paramCount: total,
+        requiredParamCount: required
+      };
+    }
+  }
+
+  // 7. Ruby public methods, classes, and modules
+  if (filePath.endsWith('.rb')) {
+    const rbDefMatch = trimmed.match(/^def\s+(?:self\.)?([a-zA-Z][a-zA-Z0-9_?!]*)\s*(?:\(([^)]*)\))?/);
+    if (rbDefMatch && !rbDefMatch[1].startsWith('_')) {
+      const { total, required } = countParams(rbDefMatch[2] ?? '', [], true);
+      return {
+        name: rbDefMatch[1],
+        kind: 'function',
+        file: filePath,
+        paramCount: total,
+        requiredParamCount: required
+      };
+    }
+
+    const rbClassMatch = trimmed.match(/^(class|module)\s+([A-Z][a-zA-Z0-9_:]*)/);
+    if (rbClassMatch) {
+      return {
+        name: rbClassMatch[2],
+        kind: rbClassMatch[1] === 'module' ? 'interface' : 'class',
         file: filePath
       };
     }

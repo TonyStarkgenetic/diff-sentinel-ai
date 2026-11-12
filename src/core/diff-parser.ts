@@ -4,6 +4,27 @@
 
 import type { DiffFile, DiffHunk, ParsedDiff } from '../types.ts';
 
+/**
+ * Sanitizes file paths extracted from unified diff headers to prevent
+ * directory traversal (`../`), drive-letter injection, or null-byte poisoning.
+ */
+export function sanitizeDiffPath(rawPath: string): string {
+  if (!rawPath) return 'unknown';
+  const cleaned = rawPath
+    .replace(/\0/g, '')
+    .replace(/\\/g, '/')
+    .replace(/^["']|["']$/g, '')
+    .replace(/^[a-zA-Z]:\/+/, '')
+    .replace(/^\/+/, '')
+    .trim();
+
+  const safeSegments = cleaned
+    .split('/')
+    .filter(seg => seg.length > 0 && seg !== '.' && seg !== '..');
+
+  return safeSegments.length > 0 ? safeSegments.join('/') : 'unknown';
+}
+
 export function parseUnifiedDiff(rawDiff: string): ParsedDiff {
   if (!rawDiff || !rawDiff.trim()) {
     return {
@@ -37,8 +58,8 @@ export function parseUnifiedDiff(rawDiff: string): ParsedDiff {
       }
 
       const match = line.match(/^diff --git a\/(.+?) b\/(.+)$/);
-      const oldPath = match ? match[1] : '';
-      const newPath = match ? match[2] : '';
+      const oldPath = match ? sanitizeDiffPath(match[1]) : '';
+      const newPath = match ? sanitizeDiffPath(match[2]) : '';
 
       currentFile = {
         oldPath: oldPath || 'unknown',
@@ -56,7 +77,7 @@ export function parseUnifiedDiff(rawDiff: string): ParsedDiff {
     if (!currentFile) {
       // Diff without 'diff --git', e.g. from git show or standard patch
       if (line.startsWith('--- a/') || line.startsWith('--- ')) {
-        const path = line.replace(/^---\s+(a\/)?/, '').trim();
+        const path = sanitizeDiffPath(line.replace(/^---\s+(a\/)?/, '').trim());
         currentFile = {
           oldPath: path,
           newPath: path,
@@ -89,11 +110,11 @@ export function parseUnifiedDiff(rawDiff: string): ParsedDiff {
         continue;
       }
       if (line.startsWith('--- a/')) {
-        currentFile.oldPath = line.substring(6).trim();
+        currentFile.oldPath = sanitizeDiffPath(line.substring(6).trim());
         continue;
       }
       if (line.startsWith('+++ b/')) {
-        currentFile.newPath = line.substring(6).trim();
+        currentFile.newPath = sanitizeDiffPath(line.substring(6).trim());
         continue;
       }
 

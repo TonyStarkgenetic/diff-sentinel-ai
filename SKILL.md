@@ -5,7 +5,7 @@ license: Apache-2.0
 compatibility: Node.js 22+ and git. Zero external runtime dependencies.
 metadata:
   author: TonyStarkgenetic
-  version: "1.3.0"
+  version: "1.4.0"
   repository: https://github.com/TonyStarkgenetic/diff-sentinel-ai
   mcp-protocol: "2024-11-05"
 ---
@@ -19,9 +19,9 @@ A lightweight git diff analyzer and Model Context Protocol (MCP) server for insp
 Use this skill when:
 - Reviewing pull requests or checking local uncommitted changes (`git diff`).
 - Scanning diffs for exposed credentials (API keys, tokens, database passwords) and dangerous functions (`eval`, shell exec).
-- Checking for breaking changes in exported functions, classes, and interfaces (TypeScript, JavaScript, Python, Go, Rust).
+- Checking for breaking changes in exported functions, classes, and interfaces (TypeScript, JavaScript, Python, Go, Rust, Java, C#, Ruby).
 - Compressing large diffs to avoid wasting LLM context window tokens on lockfiles or generated bundles.
-- Auditing dependency changes in `package.json`, `requirements.txt`, or `Cargo.toml`.
+- Auditing dependency and lockfile changes in `package.json`, `pnpm-lock.yaml`, `requirements.txt`, `poetry.lock`, `Cargo.toml`, `go.mod`, or `go.sum`.
 
 ---
 

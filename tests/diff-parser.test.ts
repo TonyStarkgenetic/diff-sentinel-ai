@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert';
-import { parseUnifiedDiff } from '../src/core/diff-parser.ts';
+import { parseUnifiedDiff, sanitizeDiffPath } from '../src/core/diff-parser.ts';
 
 test('parseUnifiedDiff: should handle empty diff gracefully', () => {
   const result = parseUnifiedDiff('');
@@ -45,4 +45,21 @@ new file mode 100644
   assert.strictEqual(result.totalFiles, 1);
   assert.strictEqual(result.files[0].isNew, true);
   assert.strictEqual(result.totalAdditions, 2);
+});
+
+test('sanitizeDiffPath: should neutralize directory traversal and drive-letter prefixes', () => {
+  assert.strictEqual(sanitizeDiffPath('../../../etc/passwd'), 'etc/passwd');
+  assert.strictEqual(sanitizeDiffPath('C:\\Windows\\System32\\cmd.exe'), 'Windows/System32/cmd.exe');
+  assert.strictEqual(sanitizeDiffPath('/var/run/../../src/app.ts'), 'var/run/src/app.ts');
+
+  const traversalDiff = `diff --git a/../../../../etc/shadow b/../../../../etc/shadow
+--- a/../../../../etc/shadow
++++ b/../../../../etc/shadow
+@@ -1,1 +1,1 @@
+-root:x
++root:y
+`;
+  const parsed = parseUnifiedDiff(traversalDiff);
+  assert.strictEqual(parsed.files[0].newPath, 'etc/shadow');
+  assert.strictEqual(parsed.files[0].newPath.includes('..'), false);
 });

@@ -115,7 +115,7 @@ export const MCP_TOOLS: MCPToolDefinition[] = [
   {
     name: 'analyze_dependencies',
     description:
-      'Analyze package.json and manifest diffs for risky upgrades, downgrades, loosened version pins, and typosquatting risks.',
+      'Analyze package manifest and lockfile diffs (package.json, pnpm-lock.yaml, requirements.txt, poetry.lock, Cargo.toml, go.mod, go.sum) for risky upgrades, downgrades, loosened version pins, unencrypted HTTP sources, and typosquatting risks.',
     inputSchema: {
       type: 'object',
       properties: {

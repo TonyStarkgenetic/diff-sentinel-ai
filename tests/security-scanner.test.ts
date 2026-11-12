@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert';
 import { parseUnifiedDiff } from '../src/core/diff-parser.ts';
-import { scanDiffForSecurity } from '../src/core/security-scanner.ts';
+import { MAX_SCAN_LINE_LENGTH, scanDiffForSecurity } from '../src/core/security-scanner.ts';
 
 test('security-scanner: should detect OpenAI key in diff additions', () => {
   const diffWithKey = `diff --git a/config.ts b/config.ts
@@ -49,4 +49,22 @@ test('security-scanner: should detect dangerous eval call', () => {
   const findings = scanDiffForSecurity(parsed);
 
   assert.strictEqual(findings.some(f => f.ruleId === 'VULN-001'), true);
+});
+
+test('security-scanner: should cap extremely long minified lines to prevent ReDoS', () => {
+  const hugePadding = 'A'.repeat(MAX_SCAN_LINE_LENGTH + 50000);
+  const adversarialDiff = `diff --git a/dist/bundle.js b/dist/bundle.js
+--- a/dist/bundle.js
++++ b/dist/bundle.js
+@@ -1,1 +1,2 @@
++const minified = "SELECT * FROM users WHERE id = '" + ${hugePadding};
+`;
+
+  const start = performance.now();
+  const parsed = parseUnifiedDiff(adversarialDiff);
+  const findings = scanDiffForSecurity(parsed);
+  const elapsedMs = performance.now() - start;
+
+  assert.strictEqual(Array.isArray(findings), true);
+  assert.strictEqual(elapsedMs < 200, true, `Expected scan under 200ms, took ${elapsedMs}ms`);
 });

@@ -1,6 +1,6 @@
 /**
  * diff-sentinel: Dependency Change & Supply-Chain Risk Analyzer
- * Supports package.json (Node.js), requirements.txt (Python), and Cargo.toml (Rust)
+ * Supports package.json, pnpm-lock.yaml, requirements.txt, poetry.lock, Cargo.toml, go.mod, and go.sum
  */
 
 import type { ParsedDiff } from '../types.ts';
@@ -34,20 +34,32 @@ export function analyzeDependencies(parsedDiff: ParsedDiff): DependencyAnalysis 
   const changes: DependencyChange[] = [];
   const warnings: string[] = [];
 
-  const manifestFiles = parsedDiff.files.filter(f =>
-    /package\.json$/i.test(f.newPath || f.oldPath) ||
-    /requirements.*\.txt$/i.test(f.newPath || f.oldPath) ||
-    /Cargo\.toml$/i.test(f.newPath || f.oldPath)
-  );
+  const manifestFiles = parsedDiff.files.filter(f => {
+    const p = f.newPath || f.oldPath;
+    return (
+      /package\.json$/i.test(p) ||
+      /pnpm-lock\.yaml$/i.test(p) ||
+      /requirements.*\.txt$/i.test(p) ||
+      /poetry\.lock$/i.test(p) ||
+      /Cargo\.toml$/i.test(p) ||
+      /go\.(mod|sum)$/i.test(p)
+    );
+  });
 
   for (const file of manifestFiles) {
     const filePath = file.newPath || file.oldPath;
     if (/package\.json$/i.test(filePath)) {
       parsePackageJsonDiff(file.hunks, changes, warnings);
+    } else if (/pnpm-lock\.yaml$/i.test(filePath)) {
+      parsePnpmLockDiff(file.hunks, changes, warnings);
     } else if (/requirements.*\.txt$/i.test(filePath)) {
       parseRequirementsTxtDiff(file.hunks, changes, warnings, /dev/i.test(filePath));
+    } else if (/poetry\.lock$/i.test(filePath)) {
+      parsePoetryLockDiff(file.hunks, changes, warnings);
     } else if (/Cargo\.toml$/i.test(filePath)) {
       parseCargoTomlDiff(file.hunks, changes, warnings);
+    } else if (/go\.(mod|sum)$/i.test(filePath)) {
+      parseGoModSumDiff(file.hunks, changes, warnings);
     }
   }
 
@@ -209,6 +221,155 @@ function parseCargoTomlDiff(
   correlateChanges(addedMap, removedMap, changes, warnings);
 }
 
+function parsePnpmLockDiff(
+  hunks: { lines: string[] }[],
+  changes: DependencyChange[],
+  warnings: string[]
+): void {
+  const addedMap = new Map<string, { version: string; isDev: boolean }>();
+  const removedMap = new Map<string, { version: string; isDev: boolean }>();
+  const reservedKeys = new Set([
+    'lockfileVersion',
+    'specifier',
+    'version',
+    'resolution',
+    'integrity',
+    'tarball',
+    'dev',
+    'optional',
+    'dependencies',
+    'devDependencies',
+    'packages',
+    'snapshots'
+  ]);
+
+  for (const hunk of hunks) {
+    for (const line of hunk.lines) {
+      if (!line.startsWith('+') && !line.startsWith('-')) continue;
+      if (line.startsWith('+++') || line.startsWith('---')) continue;
+
+      const sign = line[0];
+      const body = line.substring(1);
+
+      if (sign === '+' && /tarball:\s*['"]?http:\/\//i.test(body)) {
+        warnings.push('Unencrypted HTTP tarball URL detected in pnpm-lock.yaml resolution.');
+      }
+
+      // Match pnpm package key: /@scope/pkg@1.2.3: or 'lodash@4.17.21':
+      const pkgKeyMatch = body.match(/^\s{2,4}['"]?\/?(@?[a-zA-Z0-9_\-./]+)@([0-9][a-zA-Z0-9_.\-+]*)['"]?\s*:/);
+      if (pkgKeyMatch) {
+        const pkgName = pkgKeyMatch[1];
+        const version = pkgKeyMatch[2].split('(')[0];
+        if (sign === '+') {
+          addedMap.set(pkgName, { version, isDev: false });
+        } else {
+          removedMap.set(pkgName, { version, isDev: false });
+        }
+        continue;
+      }
+
+      // Match importer direct version mapping: pkg: 1.2.3
+      const directMatch = body.match(/^\s{2,6}['"]?(@?[a-zA-Z0-9_\-./]+)['"]?\s*:\s*([0-9][a-zA-Z0-9_.\-+]*)/);
+      if (directMatch && !reservedKeys.has(directMatch[1])) {
+        const pkgName = directMatch[1];
+        const version = directMatch[2].split('(')[0];
+        if (sign === '+') {
+          addedMap.set(pkgName, { version, isDev: false });
+        } else {
+          removedMap.set(pkgName, { version, isDev: false });
+        }
+      }
+    }
+  }
+
+  correlateChanges(addedMap, removedMap, changes, warnings);
+}
+
+function parsePoetryLockDiff(
+  hunks: { lines: string[] }[],
+  changes: DependencyChange[],
+  warnings: string[]
+): void {
+  const addedMap = new Map<string, { version: string; isDev: boolean }>();
+  const removedMap = new Map<string, { version: string; isDev: boolean }>();
+
+  let currentPkgName: string | null = null;
+  let currentPkgSign: string = ' ';
+
+  for (const hunk of hunks) {
+    for (const line of hunk.lines) {
+      if (line.startsWith('+++') || line.startsWith('---')) continue;
+
+      const sign = line[0] === '+' || line[0] === '-' ? line[0] : ' ';
+      const trimmed = line.substring(1).trim();
+
+      if (trimmed === '[[package]]') {
+        currentPkgName = null;
+        currentPkgSign = sign;
+        continue;
+      }
+
+      const nameMatch = trimmed.match(/^name\s*=\s*"([^"]+)"/);
+      if (nameMatch) {
+        currentPkgName = nameMatch[1].toLowerCase();
+        currentPkgSign = sign;
+        continue;
+      }
+
+      const versionMatch = trimmed.match(/^version\s*=\s*"([^"]+)"/);
+      if (versionMatch && currentPkgName) {
+        const version = versionMatch[1];
+        const effectiveSign = sign !== ' ' ? sign : currentPkgSign;
+        if (effectiveSign === '+') {
+          addedMap.set(currentPkgName, { version, isDev: false });
+        } else if (effectiveSign === '-') {
+          removedMap.set(currentPkgName, { version, isDev: false });
+        }
+      }
+    }
+  }
+
+  correlateChanges(addedMap, removedMap, changes, warnings);
+}
+
+function parseGoModSumDiff(
+  hunks: { lines: string[] }[],
+  changes: DependencyChange[],
+  warnings: string[]
+): void {
+  const addedMap = new Map<string, { version: string; isDev: boolean }>();
+  const removedMap = new Map<string, { version: string; isDev: boolean }>();
+
+  for (const hunk of hunks) {
+    for (const line of hunk.lines) {
+      if (!line.startsWith('+') && !line.startsWith('-')) continue;
+      if (line.startsWith('+++') || line.startsWith('---')) continue;
+
+      const sign = line[0];
+      const trimmed = line.substring(1).trim();
+      if (!trimmed || trimmed.startsWith('//') || trimmed.startsWith('module ') || trimmed.startsWith('go ')) {
+        continue;
+      }
+
+      // Match go.mod require line or go.sum entry: github.com/owner/repo v1.2.3
+      const match = trimmed.match(/^(?:require\s+)?([a-zA-Z0-9_.\-]+\/[a-zA-Z0-9_.\-/]+)\s+v([0-9][a-zA-Z0-9_.\-+]*?)(?:\/go\.mod)?(?:\s|$)/);
+      if (!match) continue;
+
+      const pkgName = match[1];
+      const version = match[2];
+      const isIndirect = /\/\/\s*indirect\b/.test(trimmed);
+
+      if (sign === '+') {
+        addedMap.set(pkgName, { version, isDev: isIndirect });
+      } else if (sign === '-') {
+        removedMap.set(pkgName, { version, isDev: isIndirect });
+      }
+    }
+  }
+
+  correlateChanges(addedMap, removedMap, changes, warnings);
+}
+
 function correlateChanges(
   addedMap: Map<string, { version: string; isDev: boolean }>,
   removedMap: Map<string, { version: string; isDev: boolean }>,
@@ -221,6 +382,11 @@ function correlateChanges(
     if (SUSPICIOUS_PACKAGE_NAMES.some(rx => rx.test(pkgName))) {
       riskFlags.push('Suspicious or potentially typosquatted package name');
       warnings.push(`Potential typosquatting detected for package: '${pkgName}'`);
+    }
+
+    if (/^(?:git\+)?http:\/\//i.test(addInfo.version)) {
+      riskFlags.push('Unencrypted HTTP dependency source');
+      warnings.push(`Dependency '${pkgName}' uses an unencrypted HTTP source ('${addInfo.version}').`);
     }
 
     if (removedMap.has(pkgName)) {

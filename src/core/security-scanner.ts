@@ -185,6 +185,12 @@ const SECURITY_RULES: SecretRule[] = [
   }
 ];
 
+/**
+ * Maximum characters evaluated per diff line to prevent polynomial regex
+ * backtracking (ReDoS) on minified bundles or adversarially crafted patches.
+ */
+export const MAX_SCAN_LINE_LENGTH = 4096;
+
 export function scanDiffForSecurity(parsedDiff: ParsedDiff): SecurityFinding[] {
   const findings: SecurityFinding[] = [];
 
@@ -199,7 +205,11 @@ export function scanDiffForSecurity(parsedDiff: ParsedDiff): SecurityFinding[] {
 
       for (const line of hunk.lines) {
         if (line.startsWith('+')) {
-          const content = line.substring(1);
+          const rawContent = line.substring(1);
+          const content =
+            rawContent.length > MAX_SCAN_LINE_LENGTH
+              ? rawContent.slice(0, MAX_SCAN_LINE_LENGTH)
+              : rawContent;
 
           for (const rule of SECURITY_RULES) {
             // If test fixture, only check critical secrets (e.g. real API keys)

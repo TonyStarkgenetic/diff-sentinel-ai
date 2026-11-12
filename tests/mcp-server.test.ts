@@ -3,6 +3,7 @@ import assert from 'node:assert';
 import fs from 'node:fs';
 import path from 'node:path';
 import { MCP_TOOLS } from '../src/mcp/tools.ts';
+import { sanitizeRpcId } from '../src/mcp/server.ts';
 
 test('mcp-tools: should list required tools with valid schemas', () => {
   const toolNames = MCP_TOOLS.map(t => t.name);
@@ -48,4 +49,12 @@ test('SKILL.md: should adhere to Agent Skills specification and document all MCP
       `SKILL.md should document MCP tool: ${tool.name}`
     );
   }
+});
+
+test('mcp-server: sanitizeRpcId should reject non-primitive or non-finite RPC ids', () => {
+  assert.strictEqual(sanitizeRpcId(1), 1);
+  assert.strictEqual(sanitizeRpcId('req-42'), 'req-42');
+  assert.strictEqual(sanitizeRpcId(NaN), null);
+  assert.strictEqual(sanitizeRpcId({ __proto__: {} }), null);
+  assert.strictEqual(sanitizeRpcId(['injected']), null);
 });

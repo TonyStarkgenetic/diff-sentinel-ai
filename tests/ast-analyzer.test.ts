@@ -77,3 +77,47 @@ diff --git a/src/lib.rs b/src/lib.rs
   assert.strictEqual(breaking.some(b => b.symbolName === 'StartServer' && b.changeType === 'signature_modified'), true);
   assert.strictEqual(breaking.some(b => b.symbolName === 'parse_token' && b.changeType === 'removed'), true);
 });
+
+test('ast-analyzer: should detect breaking changes in Java, C#, and Ruby files', () => {
+  const polyglotDiff = `diff --git a/src/PaymentGateway.java b/src/PaymentGateway.java
+--- a/src/PaymentGateway.java
++++ b/src/PaymentGateway.java
+@@ -10,3 +10,3 @@
+-    public TransactionResult chargeCustomer(String customerId, long amountCents) {
++    public TransactionResult chargeCustomer(String customerId, long amountCents, String currencyCode) {
+diff --git a/src/TokenValidator.cs b/src/TokenValidator.cs
+--- a/src/TokenValidator.cs
++++ b/src/TokenValidator.cs
+@@ -14,4 +14,3 @@
+-    public async Task<bool> ValidateTokenAsync(string token)
++    public async Task<bool> ValidateTokenAsync(string token, string issuer, bool checkRevocation = false)
+-    public class LegacyClaimsPrincipal
+diff --git a/lib/webhook_dispatcher.rb b/lib/webhook_dispatcher.rb
+--- a/lib/webhook_dispatcher.rb
++++ b/lib/webhook_dispatcher.rb
+@@ -4,3 +4,3 @@
+-  def dispatch_event(event_name, payload)
++  def dispatch_event(event_name, payload, signature_header, retries: 3)
+`;
+
+  const parsed = parseUnifiedDiff(polyglotDiff);
+  const breaking = detectBreakingChanges(parsed);
+
+  assert.strictEqual(breaking.length, 4);
+  assert.strictEqual(
+    breaking.some(b => b.symbolName === 'chargeCustomer' && b.changeType === 'signature_modified'),
+    true
+  );
+  assert.strictEqual(
+    breaking.some(b => b.symbolName === 'ValidateTokenAsync' && b.changeType === 'signature_modified'),
+    true
+  );
+  assert.strictEqual(
+    breaking.some(b => b.symbolName === 'LegacyClaimsPrincipal' && b.changeType === 'removed'),
+    true
+  );
+  assert.strictEqual(
+    breaking.some(b => b.symbolName === 'dispatch_event' && b.changeType === 'signature_modified'),
+    true
+  );
+});

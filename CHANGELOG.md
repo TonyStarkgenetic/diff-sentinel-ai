@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-11-12
+
+### Features
+
+- **ast-analyzer**: Added public API breaking-change detection for Java (`.java`), C# (`.cs`), and Ruby (`.rb`), including C# default arguments, Java varargs, and Ruby keyword defaults.
+- **dep-analyzer**: Added deep lockfile supply-chain diffing for `pnpm-lock.yaml`, `poetry.lock`, `go.mod`, and `go.sum`, plus detection for unencrypted HTTP tarball/registry sources.
+- **skill**: Added Agent Skills specification manifest (`SKILL.md`) for portable agent installation across Claude Code, Codex, and Cursor.
+
+### Security
+
+- **diff-parser**: Hardened unified diff header parsing (`sanitizeDiffPath`) against `../` path traversal, null-byte injection, and Windows drive-letter prefixing.
+- **security-scanner**: Added per-line scan length cap (`MAX_SCAN_LINE_LENGTH = 4096`) to prevent polynomial regex backtracking (ReDoS) on minified bundles and adversarial patches.
+- **mcp**: Hardened JSON-RPC 2.0 request envelope validation (`sanitizeRpcId` and 10 MB line limit) against malformed IDs and oversized payloads.
+
 ## [1.3.0] - 2026-11-05
 
 ### Features

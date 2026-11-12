@@ -7,7 +7,7 @@ import type { BreakingChange, SarifLog, SarifResult, SarifRule, SecurityFinding 
 
 const SARIF_SCHEMA = 'https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json';
 const TOOL_NAME = 'diff-sentinel';
-const TOOL_VERSION = '1.3.0';
+const TOOL_VERSION = '1.4.0';
 const TOOL_URI = 'https://github.com/TonyStarkgenetic/diff-sentinel-ai';
 
 export function generateSarifReport(

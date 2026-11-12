@@ -18,7 +18,7 @@ import {
 } from './index.ts';
 import { startMCPServer } from './mcp/server.ts';
 
-const VERSION = '1.3.0';
+const VERSION = '1.4.0';
 
 export function runCLI(args: string[] = process.argv.slice(2)): void {
   const command = args[0] || '--help';

@@ -8,7 +8,7 @@
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg?style=flat-square)](LICENSE)
 [![MCP Protocol](https://img.shields.io/badge/MCP-2024--11--05-purple?style=flat-square)](https://modelcontextprotocol.io)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D22.0.0-green.svg?style=flat-square&logo=node.js)](package.json)
-[![Tests](https://img.shields.io/badge/tests-34%20passed-brightgreen?style=flat-square)](tests)
+[![Tests](https://img.shields.io/badge/tests-39%20passed-brightgreen?style=flat-square)](tests)
 
 </div>
 
@@ -28,14 +28,14 @@ Reviewing pull requests at scale is challenging:
 
 ## Key Features
 
-- **Unified Diff Parser**: Parses hunks, additions, deletions, and file renames with blast-radius calculation.
-- **AST Breaking Change Detection**: Identifies removed exports and modified parameter signatures across TypeScript, JavaScript, Python, Go, and Rust, while distinguishing optional/default parameters.
-- **Secret & Vulnerability Scanner**: 22 built-in rules detecting OpenAI, Anthropic, AWS, GCP, GitHub, Discord, database URLs, JWTs, and unsafe dynamic execution (`eval`, shell injection, SQL concat).
+- **Unified Diff Parser**: Parses hunks, additions, deletions, and file renames with blast-radius calculation and path-traversal sanitization.
+- **AST Breaking Change Detection**: Identifies removed exports and modified parameter signatures across TypeScript, JavaScript, Python, Go, Rust, Java, C#, and Ruby, while distinguishing optional/default parameters.
+- **Secret & Vulnerability Scanner**: 22 built-in rules detecting OpenAI, Anthropic, AWS, GCP, GitHub, Discord, database URLs, JWTs, and unsafe dynamic execution (`eval`, shell injection, SQL concat) with built-in ReDoS line-length guards.
 - **SARIF 2.1.0 Export**: Full compatibility with GitHub Advanced Security and Code Scanning tabs.
 - **LLM Context Optimizer**: Compresses diffs by filtering lockfile/asset noise, reducing prompt tokens by 60–80%.
 - **Model Context Protocol (MCP)**: Native JSON-RPC 2.0 stdio server providing 10 tools for Claude Desktop, Claude Code, and Cursor.
 - **Cognitive Complexity Analyzer**: Detects deeply nested conditional logic and flags maintainability hotspots.
-- **Supply-Chain Dependency Guard**: Analyzes manifest diffs (`package.json`, `requirements.txt`, `Cargo.toml`) for package downgrades, loosened pins, and typosquatting risks.
+- **Supply-Chain Dependency Guard**: Analyzes manifest and lockfile diffs (`package.json`, `pnpm-lock.yaml`, `requirements.txt`, `poetry.lock`, `Cargo.toml`, `go.mod`, `go.sum`) for package downgrades, loosened pins, unencrypted HTTP tarballs, and typosquatting risks.
 - **Automated Issue Triage**: Classifies issues by category, urgency, reproduction completeness, and labels.
 - **Zero Runtime Dependencies**: Runs natively using Node.js 22+ type-stripping and built-in test runner.
 
@@ -264,7 +264,7 @@ The test suite runs with Node's built-in test runner without third-party framewo
 npm test
 ```
 
-Current test coverage: **34 tests across 14 test suites (100% pass rate)**.
+Current test coverage: **39 tests across 14 test suites (100% pass rate)**.
 
 ---
 
